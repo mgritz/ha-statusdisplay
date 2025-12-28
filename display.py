@@ -1,6 +1,15 @@
 import threading
+import os
+import sys
+
 from time import sleep
 from queue import Queue
+
+waveshare_libdir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'e-Paper', 'RaspberryPi_JetsonNano', 'python', 'lib')
+if os.path.exists(waveshare_libdir):
+    sys.path.append(waveshare_libdir)
+from waveshare_epd import epd2in15g
 
 class DisplayItem:
     def __init__(self, title, value, visible=False):
@@ -24,6 +33,10 @@ class DisplayUpdater(threading.Thread):
         self.q = Queue()
 
     def run(self):
+        epd = epd2in15g.EPD()
+        epd.init()
+        epd.Clear()
+
         while True:
             item = self.q.get() # Blocking infinitely if no news
             if item is None:
