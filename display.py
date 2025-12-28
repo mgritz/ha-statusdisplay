@@ -17,7 +17,6 @@ class DisplayItem:
     def __init__(self, title, value, visible=False):
         self.title = title
         self.value = value
-        self.visible = visible
 
     def __str__(self):
         return f"{self.title}: {self.value}"
@@ -25,8 +24,7 @@ class DisplayItem:
     def __eq__(self, value: object) -> bool:
         return (isinstance(value, DisplayItem)
                 and self.title == value.title
-                and self.value == value.value
-                and self.visible == value.visible)
+                and self.value == value.value)
 
 class DisplayUpdater(threading.Thread):
     def __init__(self):
@@ -34,8 +32,8 @@ class DisplayUpdater(threading.Thread):
         self.items = {}
         self.q = Queue()
 
-        self.font12 = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                'Roboto', 'Roboto-VariableFont_wdth,wght.ttf'), 12)
+        self.font15 = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                'Roboto', 'Roboto-VariableFont_wdth,wght.ttf'), 15)
 
         try:
             self.epd = epd2in15g.EPD()
@@ -58,6 +56,7 @@ class DisplayUpdater(threading.Thread):
             while item is not None:
                 if (item.title not in self.items or
                         self.items[item.title] != item):
+                    print(f"M {item}")
                     update_needed = True
                     self.items[item.title] = item
                 if not self.q.empty():
@@ -74,12 +73,9 @@ class DisplayUpdater(threading.Thread):
         draw = ImageDraw.Draw(Himage)
 
         for item in self.items.values():
-            if item.visible:
-                print(f"- {item}")
-                draw.text((0, 12 * list(self.items.keys()).index(item.title)),
-                          f"{item.title}: {'OFFEN' if item.value else 'zu'}",
-                          font=self.font12, fill=self.epd.BLACK)
-
+            draw.text((0, 17 * list(self.items.keys()).index(item.title)),
+                      f"{item.title}: {'OFFEN' if item.value else 'zu'}",
+                      font=self.font15, fill=self.epd.BLACK)
         try:
             self.epd.display(self.epd.getbuffer(Himage))
         except IOError as e:

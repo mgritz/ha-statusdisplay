@@ -33,7 +33,7 @@ def main():
         topic_text = topic_text.replace("/state","").title()
 
         message_value = msg.payload.decode().lower() != "off"
-        display_updater.notify(topic_text, message_value, visible=True)
+        display_updater.notify(topic_text, message_value)
 
     client.on_connect = on_connect
     client.on_message = on_message
