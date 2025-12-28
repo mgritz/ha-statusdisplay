@@ -5,6 +5,8 @@ import sys
 from time import sleep
 from queue import Queue
 
+from PIL import Image,ImageDraw,ImageFont
+
 waveshare_libdir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 'e-Paper', 'RaspberryPi_JetsonNano', 'python', 'lib')
 if os.path.exists(waveshare_libdir):
@@ -32,10 +34,18 @@ class DisplayUpdater(threading.Thread):
         self.items = {}
         self.q = Queue()
 
+        self.font12 = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                'Roboto', 'Roboto-VariableFont_wdth,wght.ttf'), 12)
+
+        try:
+            self.epd = epd2in15g.EPD()
+            self.epd.init()
+            self.epd.Clear()
+        except IOError as e:
+            print("Failed to initialize e-Paper display:", e)
+            self.epd = None
+
     def run(self):
-        epd = epd2in15g.EPD()
-        epd.init()
-        epd.Clear()
 
         while True:
             item = self.q.get() # Blocking infinitely if no news
@@ -60,10 +70,20 @@ class DisplayUpdater(threading.Thread):
 
 
     def update_display(self):
-        print("Current MQTT Topics and Messages:")
+        Himage = Image.new('RGB', (self.epd.height, self.epd.width), self.epd.WHITE)
+        draw = ImageDraw.Draw(Himage)
+
         for item in self.items.values():
             if item.visible:
                 print(f"- {item}")
+                draw.text((0, 12 * list(self.items.keys()).index(item.title)),
+                          f"{item.title}: {'OFFEN' if item.value else 'zu'}",
+                          font=self.font12, fill=self.epd.BLACK)
+
+        try:
+            self.epd.display(self.epd.getbuffer(Himage))
+        except IOError as e:
+            print("Failed to update e-Paper display:", e)
 
     def stop(self):
         self.q.put(None)  # Send exit signal to the thread
