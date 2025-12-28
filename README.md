@@ -17,3 +17,6 @@ ha-statusdisplay
 ## Requirements
 - Python 3.7+
 - paho-mqtt
+- PIL
+- RPI.GPIO
+- spidev

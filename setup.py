@@ -8,7 +8,10 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     py_modules=["__main__"],
     install_requires=[
-        "paho-mqtt>=1.6.1"
+        "paho-mqtt>=1.6.1",
+        "Pillow",
+        "Rpi.GPIO; platform_machine=='armv7l' or platform_machine=='aarch64'",
+        "spidev; platform_machine=='armv7l' or platform_machine=='aarch64'",
     ],
     entry_points={
         "console_scripts": [
