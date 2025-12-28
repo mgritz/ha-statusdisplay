@@ -2,7 +2,8 @@
 import paho.mqtt.client as mqtt
 import time
 import signal
-import sys
+
+from display import DisplayUpdater
 
 try:
     from credentials import MQTT_USER, MQTT_PW, MQTT_BROKER, MQTT_PORT
@@ -15,20 +16,25 @@ except ImportError:
 # MQTT broker settings
 TOPIC = "#"  # Subscribe to all topics
 
-
-def on_connect(client, _userdata, _flags, rc, _properties):
-    print(f"Connected with result code {rc}")
-    client.subscribe(TOPIC)
-
-
-def on_message(_client, _userdata, msg):
-    print(f"Topic: {msg.topic} | Message: {msg.payload.decode()}")
-
-
 def main():
+    display_updater = DisplayUpdater()
+
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     if MQTT_USER and MQTT_PW:
         client.username_pw_set(MQTT_USER, MQTT_PW)
+
+    def on_connect(client, _userdata, _flags, rc, _properties):
+        print(f"Connected with result code {rc}")
+        client.subscribe(TOPIC)
+
+    def on_message(_client, _userdata, msg):
+        topic_text = msg.topic.replace("window/binary_sensor.","")
+        topic_text = topic_text.replace("sensor", "").replace("_offnung","")
+        topic_text = topic_text.replace("/state","").title()
+
+        message_value = msg.payload.decode().lower() != "off"
+        display_updater.notify(topic_text, message_value, visible=True)
+
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
@@ -43,6 +49,7 @@ def main():
     signal.signal(signal.SIGTERM, handle_sigterm)
     signal.signal(signal.SIGINT, handle_sigterm)  # Also handle Ctrl+C
 
+    display_updater.start()
     client.loop_start()
     try:
         while running:
@@ -50,7 +57,7 @@ def main():
     finally:
         client.loop_stop()
         client.disconnect()
-
+        display_updater.stop()
 
 if __name__ == "__main__":
     main()
